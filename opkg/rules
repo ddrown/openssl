@@ -1,0 +1,56 @@
+#!/bin/sh
+set -e 
+
+# notes: the libcrypto.so and libssl.so in the platform lib dir will mess up linking the openssl app
+
+PACKAGE=openssl
+
+case $ARCH_NAME in
+  x86)
+    MACHINE=x86
+    ;;
+  arm)
+    MACHINE=armv7l
+    ;;
+  mips)
+    MACHINE=mips
+    ;;
+esac
+
+export MACHINE
+
+case "$1" in
+  build)
+    RELEASE=2.6.35 SYSTEM=Linux BUILD="#1 PREEMPT Thu Aug 11 17:46:55 CST 2011" ./config --prefix=/$BASEDIR --cross-compile-prefix=a --openssldir=/$BASEDIR/etc/ssl
+    make build_libs LDFLAGS="-Wl,-dynamic-linker,/$BASEDIR/bin/linker -lc"
+#    make build-shared LDFLAGS="-Wl,-dynamic-linker,/$BASEDIR/bin/linker -lc" 
+    make LDFLAGS="-Wl,-dynamic-linker,/$BASEDIR/bin/linker -lc" 
+    ;;
+
+  install)
+    rm -rf ~/tmp/$PACKAGE
+    mkdir ~/tmp/$PACKAGE
+    DESTDIR=~/tmp/$PACKAGE
+    make INSTALL_PREFIX=$DESTDIR install
+
+    # -devel package
+    DEVEL_DESTDIR=~/tmp/$PACKAGE-devel
+    rm -rf $DEVEL_DESTDIR
+    mkdir -p $DEVEL_DESTDIR/$BASEDIR/lib $DEVEL_DESTDIR/$BASEDIR/share
+    mv $DESTDIR/$BASEDIR/lib/*.a $DEVEL_DESTDIR/$BASEDIR/lib
+    mv $DESTDIR/$BASEDIR/lib/pkgconfig $DEVEL_DESTDIR/$BASEDIR/lib
+    mv $DESTDIR/$BASEDIR/include $DEVEL_DESTDIR/$BASEDIR
+    mv $DESTDIR/$BASEDIR/etc/ssl/man $DEVEL_DESTDIR/$BASEDIR/share
+    mkdir -p $DEVEL_DESTDIR/CONTROL
+    cp opkg/control-devel $DEVEL_DESTDIR/CONTROL/control
+    opkg-build -o 0 -g 0 -b $BASEDIR $DEVEL_DESTDIR `cd .. ; pwd`
+    ;;
+
+  clean)
+    make clean
+    ;;
+
+  *)
+    echo unknown argument $1
+    ;;
+esac

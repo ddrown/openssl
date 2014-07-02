@@ -1,0 +1,9 @@
+Source: openssl
+Section: base
+Priority: optional
+Maintainer: Dan Drown <dan-android@drown.org>
+Package: openssl-devel
+Version: 1.0.1i-dev
+Architecture: mips
+Depends: 
+Description: openssl headers and libraries
